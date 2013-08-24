@@ -11,5 +11,16 @@
     "url": "git://github.com/robashton/ld48_27.git"
   },
   "author": "Rob Ashton",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-watch": "~0.5.2",
+    "grunt-browserify": "~1.2.4",
+    "domready": "~0.2.12"
+  },
+  "dependencies": {
+    "stylus": "~0.37.0",
+    "jade": "~0.35.0",
+    "express": "~3.3.5"
+  }
 }

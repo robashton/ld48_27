@@ -2,18 +2,19 @@ var domReady = require('domready')
   , rect = require('./game/rect')
   , physics = require('./game/physics')
   , core = require('./game/core')
+  , hammer = require('hammerjs')
 
 domReady(function() {
   var canvas = document.getElementById('game')
     , context = canvas.getContext('2d')
     , player = rect.create(320, 240, 3, 3)
-    , enemies = core.repeat(10000, spawnEnemy)
+    , enemies = core.repeat(100, spawnEnemy)
 
   setInterval(function() {
     clear(context, canvas)
     player = physics.apply(player)
     enemies = core.map(enemies, physics.apply)
-    enemies = core.map(enemies, rect.gravitateTowards, player, 0.5)
+    enemies = core.map(enemies, rect.gravitateTowards, player, 0.01)
     drawPlayer(context, player)
     drawEnemies(context, enemies)
   }, 1000/30)

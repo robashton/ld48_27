@@ -11,6 +11,7 @@ var create = exports.create = function(x, y, w, h) {
     h: h,
     vx: 0,
     vy: 0,
+    friction: 0.01,
     render: {
       colour: '#FFF'
     }

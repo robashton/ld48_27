@@ -6,16 +6,24 @@ var domReady = require('domready')
   , core = require('./game/core')
   , input = require('./game/input')
   , balancing = require('./game/balancing')
+  , text = require('./game/text')
 
 domReady(function() {
-  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
-    , enemies = core.repeat(100, spawnEnemy)
-    , bullets = core.repeat(1000, createBullet)
-  
   input.init()
 
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
+    , enemies = null
+    , bullets = core.repeat(1000, createBullet)
+    , timeLeft = -1
+    , frameTime  = 1000 / 30
+
   setInterval(function() {
-    clear()
+    if(timeLeft < 0) {
+      timeLeft = 10000
+      balancing.levelup()
+      enemies = core.repeat(100, spawnEnemy)
+    }
+
     player = physics.apply(player)
     player = input.applyImpulses(player)
     bullets = input.applyBullets(bullets, player)
@@ -25,10 +33,14 @@ domReady(function() {
     var collisions = physics.collideLists(enemies, bullets)
     enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
     bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
+
+    clear()
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
     core.each(bullets, function(bullet) { rect.draw(bullet) })
-  }, 1000/30)
+    text.draw(parseInt(timeLeft / 1000, 10), 600, 40, 18)
+    timeLeft -= frameTime
+  }, frameTime)
 })
 
 function clear() {
@@ -59,13 +71,19 @@ function vectorFromDegrees(degrees) {
   }
 }
 
-},{"./game/balancing":2,"./game/canvas":3,"./game/core":4,"./game/input":5,"./game/physics":7,"./game/rect":8,"domready":9}],2:[function(require,module,exports){
+},{"./game/balancing":2,"./game/canvas":3,"./game/core":4,"./game/input":5,"./game/physics":7,"./game/rect":8,"./game/text":9,"domready":10}],2:[function(require,module,exports){
+var _level = 0
+
+exports.levelup = function() {
+  _level++
+}
+
 exports.bulletspeed = function() {
   return 2.5
 }
 
 exports.enemyImpulse = function() {
-  return 0.01
+  return 0.01 * _level
 }
 
 exports.playerImpulse = function() {
@@ -252,7 +270,7 @@ var _left = false,
  }
 
 
-},{"./balancing":2,"./canvas":3,"./maths":6,"./rect":8,"throttleit":10}],6:[function(require,module,exports){
+},{"./balancing":2,"./canvas":3,"./maths":6,"./rect":8,"throttleit":11}],6:[function(require,module,exports){
 exports.vectorBetween = function(srcx, srcy, destx, desty) {
   var x = destx - srcx
     , y = desty - srcy
@@ -381,6 +399,15 @@ exports.gravitateTowards = function(src, dest, power) {
 }
 
 },{"./canvas":3,"./maths":6,"./physics":7}],9:[function(require,module,exports){
+var canvas = require('./canvas')
+
+exports.draw = function(text, x, y, size) {
+  canvas.context().font = 'italic 40pt Calibri';
+  canvas.context().fillStyle = '#FFF'
+  canvas.context().fillText(text, x, y)
+}
+
+},{"./canvas":3}],10:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -436,7 +463,7 @@ exports.gravitateTowards = function(src, dest, power) {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 
 /**
  * Module exports.

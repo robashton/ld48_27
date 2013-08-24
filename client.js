@@ -5,16 +5,24 @@ var domReady = require('domready')
   , core = require('./game/core')
   , input = require('./game/input')
   , balancing = require('./game/balancing')
+  , text = require('./game/text')
 
 domReady(function() {
-  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
-    , enemies = core.repeat(100, spawnEnemy)
-    , bullets = core.repeat(1000, createBullet)
-  
   input.init()
 
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
+    , enemies = null
+    , bullets = core.repeat(1000, createBullet)
+    , timeLeft = -1
+    , frameTime  = 1000 / 30
+
   setInterval(function() {
-    clear()
+    if(timeLeft < 0) {
+      timeLeft = 10000
+      balancing.levelup()
+      enemies = core.repeat(100, spawnEnemy)
+    }
+
     player = physics.apply(player)
     player = input.applyImpulses(player)
     bullets = input.applyBullets(bullets, player)
@@ -24,10 +32,14 @@ domReady(function() {
     var collisions = physics.collideLists(enemies, bullets)
     enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
     bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
+
+    clear()
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
     core.each(bullets, function(bullet) { rect.draw(bullet) })
-  }, 1000/30)
+    text.draw(parseInt(timeLeft / 1000, 10), 600, 40, 18)
+    timeLeft -= frameTime
+  }, frameTime)
 })
 
 function clear() {

@@ -17,6 +17,7 @@ exports.create = function(x, y, w, h) {
     vx: 0,
     vy: 0,
     alive: true,
+    age: 0,
     boundscheck: physics.boundsbounce,
     friction: 0.01,
     render: {

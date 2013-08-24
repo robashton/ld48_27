@@ -6,10 +6,12 @@ for(var i = 0 ; i < 1000; i++)
   _collisionBuffer[i] = { collision: false, one: 0, two: 0 }
 
 exports.apply = function(rect) {
+  if(!rect.alive) return rect
   rect.x += rect.vx
   rect.y += rect.vy
   rect.vx *= (1.0 - rect.friction)
   rect.vy *= (1.0 - rect.friction)
+  rect.age += 1
   return rect.boundscheck(rect)
 }
 

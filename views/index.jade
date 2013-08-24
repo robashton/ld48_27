@@ -1,12 +1,22 @@
 extends layout
 
 block content
-  canvas#game(width="640px", height="480px")
+  #intro
+    h1 OMG IT IS A GAME
+    h5 instructions
+    p WASD or arrow keys to move
+    p mouse to fire
+    p I'll add touch controls at the end of day 2
+    p This is work in progress, as rudimentary as it gets
+    p code can be found at <a href="https://github.com/robashton/ld48_27">github</a>
+    a.btn.btn-large.btn-primary#start Start
 
-  h5 instructions
-  p WASD or arrow keys to move
-  p mouse to fire
-  p I'll add touch controls at the end of day 2
-  p This is work in progress, as rudimentary as it gets
-  p code can be found at <a href="https://github.com/robashton/ld48_27">github</a>
+  #play
+    canvas#game(width="640px", height="480px")
+  
+  #over
+    h2 OH NO DEAD!
+    p You got <div id="score"></div> points
+    a.btn.btn-large.btn-primary#restart Try again
+
 

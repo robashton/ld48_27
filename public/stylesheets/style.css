@@ -1,0 +1,7 @@
+#intro {
+  display: block;
+}
+#play,
+#over {
+  display: none;
+}

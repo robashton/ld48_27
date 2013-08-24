@@ -1,5 +1,9 @@
 var _level = 0
 
+exports.reset = function() {
+  _level = 0
+}
+
 exports.levelup = function() {
   _level++
 }

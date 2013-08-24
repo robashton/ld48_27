@@ -24,6 +24,14 @@ var _left = false,
    _firingMethod = throttleit(addBulletTo, 100)
  }
 
+ exports.shutdown = function() {
+   document.onkeydown = null
+   document.onkeyup = null
+   document.onmousedown = null
+   document.onmouseup = null
+   document.onmousemove = null
+ }
+
  exports.applyImpulses = function(player) {
    var x = _left ? -1 : _right ? 1 : 0 
      , y = _up ? -1 : _down ? 1 : 0

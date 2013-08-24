@@ -7,6 +7,7 @@ var domReady = require('domready')
   , input = require('./game/input')
   , balancing = require('./game/balancing')
   , text = require('./game/text')
+  , maths = require('./game/maths')
 
 domReady(function() {
   var btnStart = document.getElementById('start')
@@ -49,7 +50,6 @@ domReady(function() {
         timeLeft = 10000
         balancing.levelup()
         enemies = core.repeat(100, spawnEnemy)
-        health = 100
       }
 
       if(health < 0) {
@@ -59,10 +59,11 @@ domReady(function() {
       }
 
       // If you're looking at this and wondering WTF, then
-      // basically, I decide to have a bit of fun with this and see about 
+      // basically, I decided to have a bit of fun with this and see about 
       // avoiding creating new objects, and avoid mutation unless the function returns
       // the new version of the object it has worked out in some places, and not in others
       // A fun experiment it was nonetheless even if it makes the code a bit wtf
+      // I gave up on it after about 5 hours and was left with this pattern and decided to roll with it
       
       player = physics.apply(player)
       player = input.applyImpulses(player)
@@ -107,6 +108,24 @@ function firstItemFromCollision(item) {
 
 function secondItemFromCollision(item) {
   return item.collision ? item.two : null
+}
+
+function pushEnemiesAwayFromCentre(enemies) {
+  var centre =  core.reduce(
+    { x: 0, y: 0},
+    enemies,
+    function(enemy) { return enemy },
+    function(current, enemy) { current.x += enemy.x; current.y += enemy.y; return current })
+
+  centre.x /= enemies.length
+  centre.y /= enemies.length
+
+  return core.updatein(enemies, function(enemy) {
+    var vector = maths.vectorBetween(enemy.x, enemy.y, centre.x, centre.y)
+    enemy.vx += vector.x * - balancing.enemyImpulse() / 2
+    enemy.vy += vector.y * - balancing.enemyImpulse() / 2    
+    return enemy
+  })
 }
 
 function updateExplosionsFromCollisions(explosions, collisions, rects) {
@@ -207,7 +226,7 @@ function vectorFromDegrees(degrees) {
   }
 }
 
-},{"./game/balancing":2,"./game/canvas":3,"./game/core":4,"./game/input":5,"./game/physics":7,"./game/rect":8,"./game/text":9,"domready":10}],2:[function(require,module,exports){
+},{"./game/balancing":2,"./game/canvas":3,"./game/core":4,"./game/input":5,"./game/maths":6,"./game/physics":7,"./game/rect":8,"./game/text":9,"domready":10}],2:[function(require,module,exports){
 var _level = 0
 
 exports.reset = function() {
@@ -516,6 +535,22 @@ exports.boundskill = function(rect) {
   return rect
 }
 
+exports.boundsthrough = function(rect) {
+  if(rect.x < 0) {
+    rect.x = canvas.width() - 1
+  }
+  if(rect.x > canvas.width()) {
+    rect.x = 1
+  }
+  if(rect.y < 0) {
+    rect.y = canvas.height() - 1
+  }
+  if(rect.y > canvas.height()) {
+    rect.y = 1
+  }
+  return rect
+}
+
 exports.boundsbounce = function(rect) {
   if(outsideHorizontal(rect))
       rect.vx = -rect.vx
@@ -545,7 +580,7 @@ exports.create = function(x, y, w, h) {
     vy: 0,
     alive: true,
     age: 0,
-    boundscheck: physics.boundsbounce,
+    boundscheck: physics.boundsthrough,
     friction: 0.01,
     render: {
       colour: '#FFF'

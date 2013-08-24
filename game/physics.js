@@ -73,6 +73,22 @@ exports.boundskill = function(rect) {
   return rect
 }
 
+exports.boundsthrough = function(rect) {
+  if(rect.x < 0) {
+    rect.x = canvas.width() - 1
+  }
+  if(rect.x > canvas.width()) {
+    rect.x = 1
+  }
+  if(rect.y < 0) {
+    rect.y = canvas.height() - 1
+  }
+  if(rect.y > canvas.height()) {
+    rect.y = 1
+  }
+  return rect
+}
+
 exports.boundsbounce = function(rect) {
   if(outsideHorizontal(rect))
       rect.vx = -rect.vx

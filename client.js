@@ -6,6 +6,7 @@ var domReady = require('domready')
   , input = require('./game/input')
   , balancing = require('./game/balancing')
   , text = require('./game/text')
+  , maths = require('./game/maths')
 
 domReady(function() {
   var btnStart = document.getElementById('start')
@@ -48,7 +49,6 @@ domReady(function() {
         timeLeft = 10000
         balancing.levelup()
         enemies = core.repeat(100, spawnEnemy)
-        health = 100
       }
 
       if(health < 0) {
@@ -58,10 +58,11 @@ domReady(function() {
       }
 
       // If you're looking at this and wondering WTF, then
-      // basically, I decide to have a bit of fun with this and see about 
+      // basically, I decided to have a bit of fun with this and see about 
       // avoiding creating new objects, and avoid mutation unless the function returns
       // the new version of the object it has worked out in some places, and not in others
       // A fun experiment it was nonetheless even if it makes the code a bit wtf
+      // I gave up on it after about 5 hours and was left with this pattern and decided to roll with it
       
       player = physics.apply(player)
       player = input.applyImpulses(player)
@@ -106,6 +107,24 @@ function firstItemFromCollision(item) {
 
 function secondItemFromCollision(item) {
   return item.collision ? item.two : null
+}
+
+function pushEnemiesAwayFromCentre(enemies) {
+  var centre =  core.reduce(
+    { x: 0, y: 0},
+    enemies,
+    function(enemy) { return enemy },
+    function(current, enemy) { current.x += enemy.x; current.y += enemy.y; return current })
+
+  centre.x /= enemies.length
+  centre.y /= enemies.length
+
+  return core.updatein(enemies, function(enemy) {
+    var vector = maths.vectorBetween(enemy.x, enemy.y, centre.x, centre.y)
+    enemy.vx += vector.x * - balancing.enemyImpulse() / 2
+    enemy.vy += vector.y * - balancing.enemyImpulse() / 2    
+    return enemy
+  })
 }
 
 function updateExplosionsFromCollisions(explosions, collisions, rects) {

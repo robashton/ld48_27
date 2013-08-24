@@ -18,7 +18,7 @@ exports.create = function(x, y, w, h) {
     vy: 0,
     alive: true,
     age: 0,
-    boundscheck: physics.boundsbounce,
+    boundscheck: physics.boundsthrough,
     friction: 0.01,
     render: {
       colour: '#FFF'

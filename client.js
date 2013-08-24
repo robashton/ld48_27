@@ -1,37 +1,38 @@
 var domReady = require('domready')
+  , canvas = require('./game/canvas')
   , rect = require('./game/rect')
   , physics = require('./game/physics')
   , core = require('./game/core')
   , input = require('./game/input')
 
 domReady(function() {
-  var canvas = document.getElementById('game')
-    , context = canvas.getContext('2d')
-    , player = rect.create(320, 240, 3, 3)
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
     , enemies = core.repeat(100, spawnEnemy)
   
-  input.init(canvas)
+  input.init()
 
   setInterval(function() {
-    clear(context, canvas)
+    clear()
     player = physics.apply(player)
-    player = input.apply(player)
+    player = input.applyImpulses(player)
     enemies = core.map(enemies, physics.apply)
     enemies = core.map(enemies, rect.gravitateTowards, player, 0.01)
-    drawPlayer(context, player)
-    drawEnemies(context, enemies)
+    rect.draw(player)
+    core.each(enemies, function(enemy) { rect.draw(enemy) })
   }, 1000/30)
 })
 
-function clear(context, canvas) {
-  context.fillStyle = '#000'
-  context.fillRect(0,0, canvas.width, canvas.height)
+function clear() {
+  canvas.context().fillStyle = '#000'
+  canvas.context().fillRect(0,0, canvas.width(), canvas.height())
 }
 
 function spawnEnemy() {
   var degrees = Math.random()  * (Math.PI * 2)
   var direction = vectorFromDegrees(degrees)
-  return rect.create(320 * direction.x + 320, 240*direction.y + 240, 3, 3)
+  return rect.create(
+    canvas.halfwidth() * direction.x + canvas.halfwidth(), 
+    canvas.halfheight()*direction.y + canvas.halfheight(), 5, 5)
 }
 
 function vectorFromDegrees(degrees) {
@@ -39,11 +40,4 @@ function vectorFromDegrees(degrees) {
     x: Math.cos(degrees),
     y: Math.sin(degrees)
   }
-}
-function drawPlayer(context, player) {
-  rect.draw(context, player)
-}
-
-function drawEnemies(context, enemies) {
-  core.each(enemies, function(enemy) { rect.draw(context, enemy) })
 }

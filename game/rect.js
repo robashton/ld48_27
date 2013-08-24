@@ -1,9 +1,11 @@
-var draw = exports.draw =  function(context, rect) {
-  context.fillStyle = rect.render.colour
-  context.fillRect(rect.x, rect.y, rect.w, rect.h)
+var canvas = require('./canvas')
+
+exports.draw =  function(rect) {
+  canvas.context().fillStyle = rect.render.colour
+  canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
 }
 
-var create = exports.create = function(x, y, w, h) {
+exports.create = function(x, y, w, h) {
   return {
     x: x,
     y: y,

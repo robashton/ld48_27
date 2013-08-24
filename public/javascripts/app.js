@@ -1,38 +1,39 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var domReady = require('domready')
+  , canvas = require('./game/canvas')
   , rect = require('./game/rect')
   , physics = require('./game/physics')
   , core = require('./game/core')
   , input = require('./game/input')
 
 domReady(function() {
-  var canvas = document.getElementById('game')
-    , context = canvas.getContext('2d')
-    , player = rect.create(320, 240, 3, 3)
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
     , enemies = core.repeat(100, spawnEnemy)
   
-  input.init(canvas)
+  input.init()
 
   setInterval(function() {
-    clear(context, canvas)
+    clear()
     player = physics.apply(player)
-    player = input.apply(player)
+    player = input.applyImpulses(player)
     enemies = core.map(enemies, physics.apply)
     enemies = core.map(enemies, rect.gravitateTowards, player, 0.01)
-    drawPlayer(context, player)
-    drawEnemies(context, enemies)
+    rect.draw(player)
+    core.each(enemies, function(enemy) { rect.draw(enemy) })
   }, 1000/30)
 })
 
-function clear(context, canvas) {
-  context.fillStyle = '#000'
-  context.fillRect(0,0, canvas.width, canvas.height)
+function clear() {
+  canvas.context().fillStyle = '#000'
+  canvas.context().fillRect(0,0, canvas.width(), canvas.height())
 }
 
 function spawnEnemy() {
   var degrees = Math.random()  * (Math.PI * 2)
   var direction = vectorFromDegrees(degrees)
-  return rect.create(320 * direction.x + 320, 240*direction.y + 240, 3, 3)
+  return rect.create(
+    canvas.halfwidth() * direction.x + canvas.halfwidth(), 
+    canvas.halfheight()*direction.y + canvas.halfheight(), 5, 5)
 }
 
 function vectorFromDegrees(degrees) {
@@ -41,15 +42,43 @@ function vectorFromDegrees(degrees) {
     y: Math.sin(degrees)
   }
 }
-function drawPlayer(context, player) {
-  rect.draw(context, player)
+
+},{"./game/canvas":2,"./game/core":3,"./game/input":4,"./game/physics":5,"./game/rect":6,"domready":7}],2:[function(require,module,exports){
+
+var _canvas = null
+var canvas = exports.canvas = function() {
+  return _canvas || (function() {
+    _canvas = document.getElementById('game')
+    return _canvas
+  })()
 }
 
-function drawEnemies(context, enemies) {
-  core.each(enemies, function(enemy) { rect.draw(context, enemy) })
+var _context = null
+exports.context = function() {
+  return _context || (function() {
+    _context = canvas().getContext('2d')
+    return _context
+  })()
 }
 
-},{"./game/core":2,"./game/input":3,"./game/physics":4,"./game/rect":5,"domready":6}],2:[function(require,module,exports){
+exports.width = function() {
+  return canvas().width
+}
+
+exports.halfwidth = function() {
+  return canvas().width / 2
+}
+
+exports.halfheight = function() {
+  return canvas().height / 2
+}
+
+exports.height = function() {
+  return canvas().height
+}
+ 
+
+},{}],3:[function(require,module,exports){
 var each = exports.each = function(items, fn) {
   var fnArgs = extraArguments(arguments)
   fnArgs.unshift(null)
@@ -82,23 +111,34 @@ var repeat = exports.repeat = function(times, fn) {
   return result
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var rect = require('./rect')
 
 var _left = false,
     _right = false,
     _down = false,
-    _up = false
+    _up = false,
+    _firing = false,
+    _firingLocation = {
+      x: 0,
+      y: 0
+    }
 
  exports.init = function() {
    document.onkeydown = onKeyDown
    document.onkeyup = onKeyUp
+   document.onmousedown = onMouseDown
+   document.onmouseup = onMouseUp
  }
 
- exports.apply = function(player) {
+ exports.applyImpulses = function(player) {
    var x = _left ? -1 : _right ? 1 : 0 
      , y = _up ? -1 : _down ? 1 : 0
    return rect.applyImpulse(player, x, y, 0.1)
+ }
+
+ exports.applyBullets = function(existing) {
+   return existing
  }
 
  function onKeyDown(e) {
@@ -108,18 +148,32 @@ var _left = false,
    onKeyChange(e, false)
  }
 
+ function onMouseDown(e) {
+   _firing = true
+   return false
+ }
+
+ function onMouseUp(e) {
+   _firing = false
+   return false
+ }
+
  function onKeyChange(e, val) {
    switch(e.keyCode) {
      case 37:
+     case 65:
       _left = val
       break;
-     case 38:
+    case 38:
+    case 87:
       _up = val
       break;
-     case 39:
+    case 39:
+    case 68:
       _right = val
       break;
-     case 40:
+    case 40:
+    case 83:
       _down = val
       break;
    }
@@ -127,7 +181,9 @@ var _left = false,
  }
 
 
-},{"./rect":5}],4:[function(require,module,exports){
+},{"./rect":6}],5:[function(require,module,exports){
+var canvas = require('./canvas')
+
 var apply = exports.apply = function(rect) {
   rect.x += rect.vx
   rect.y += rect.vy
@@ -138,21 +194,23 @@ var apply = exports.apply = function(rect) {
 
 function restrictBoundsOf(rect) {
   if((rect.x < 0 && rect.vx < 0) ||
-    (rect.x > 640 && rect.vx > 0))
+    (rect.x > canvas.width() && rect.vx > 0))
       rect.vx = -rect.vx
   if((rect.y < 0 && rect.vy < 0) ||
-    (rect.y > 480 && rect.vy > 0))
+    (rect.y > canvas.height() && rect.vy > 0))
       rect.vy = -rect.vy
   return rect
 }
 
-},{}],5:[function(require,module,exports){
-var draw = exports.draw =  function(context, rect) {
-  context.fillStyle = rect.render.colour
-  context.fillRect(rect.x, rect.y, rect.w, rect.h)
+},{"./canvas":2}],6:[function(require,module,exports){
+var canvas = require('./canvas')
+
+exports.draw =  function(rect) {
+  canvas.context().fillStyle = rect.render.colour
+  canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
 }
 
-var create = exports.create = function(x, y, w, h) {
+exports.create = function(x, y, w, h) {
   return {
     x: x,
     y: y,
@@ -192,7 +250,7 @@ exports.gravitateTowards = function(src, dest, power) {
   return src
 }
 
-},{}],6:[function(require,module,exports){
+},{"./canvas":2}],7:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */

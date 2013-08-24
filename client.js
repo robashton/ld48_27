@@ -16,28 +16,37 @@ domReady(function() {
     , timeLeft = -1
     , frameTime  = 1000 / 30
     , score = 0
+    , health = 100
+    , collisions = null
 
   setInterval(function() {
     if(timeLeft < 0) {
       timeLeft = 10000
       balancing.levelup()
       enemies = core.repeat(100, spawnEnemy)
+      health = 100
     }
 
+    // If you're looking at this and wondering WTF, then
+    // basically, I decide to have a bit of fun with this and see about 
+    // avoiding creating new objects, and avoid mutation unless the function returns
+    // the new version of the object
+    // It has worked out in some places, and not in others
+    // A fun experiment it was nonetheless
     player = physics.apply(player)
     player = input.applyImpulses(player)
     bullets = input.applyBullets(bullets, player)
-    enemies = core.map(enemies, physics.apply)
-    bullets = core.map(bullets, physics.apply)
-    enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
-    var collisions = physics.collideLists(enemies, bullets)
-    score += core.reduce(
-      0,
-      core.map(collisions, 
-        function(item) { return item.collision ? balancing.level() : 0}),
-      function(current, x) { return current+x})
-    enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
-    bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
+    enemies = core.updatein(enemies, physics.apply)
+    bullets = core.updatein(bullets, physics.apply)
+    enemies = core.updatein(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
+    collisions = physics.collideLists(enemies, bullets)
+    score = updateScoreFromCollisions(score, collisions)
+    enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
+    bullets = rect.killUsing(bullets, collisions, secondItemFromCollision)
+    collisions = physics.collideWithList(player, enemies)
+    health = updateHealthFromCollisions(health, collisions)
+    enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
+    timeLeft -= frameTime
 
     clear()
     rect.draw(player)
@@ -45,9 +54,34 @@ domReady(function() {
     core.each(bullets, function(bullet) { rect.draw(bullet) })
     text.draw('Time left: ' + parseInt(timeLeft / 1000, 10), 500, 20, 18)
     text.draw('Score: ' + score, 10, 20, 18)
-    timeLeft -= frameTime
+    text.draw('Health: ' + health, 10, 480, 18)
   }, frameTime)
 })
+
+
+function firstItemFromCollision(item) {
+  return item.collision ? item.one : null
+}
+
+function secondItemFromCollision(item) {
+  return item.collision ? item.two : null
+}
+
+function updateHealthFromCollisions(health, collisions) {
+  return health + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? balancing.level() : 0},
+    function(current, x) { return current - x})
+}
+
+function updateScoreFromCollisions(score, collisions) {
+  return score + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? balancing.level() : 0},
+    function(current, x) { return current+x})
+}
 
 function clear() {
   canvas.context().fillStyle = '#000'

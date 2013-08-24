@@ -17,28 +17,37 @@ domReady(function() {
     , timeLeft = -1
     , frameTime  = 1000 / 30
     , score = 0
+    , health = 100
+    , collisions = null
 
   setInterval(function() {
     if(timeLeft < 0) {
       timeLeft = 10000
       balancing.levelup()
       enemies = core.repeat(100, spawnEnemy)
+      health = 100
     }
 
+    // If you're looking at this and wondering WTF, then
+    // basically, I decide to have a bit of fun with this and see about 
+    // avoiding creating new objects, and avoid mutation unless the function returns
+    // the new version of the object
+    // It has worked out in some places, and not in others
+    // A fun experiment it was nonetheless
     player = physics.apply(player)
     player = input.applyImpulses(player)
     bullets = input.applyBullets(bullets, player)
-    enemies = core.map(enemies, physics.apply)
-    bullets = core.map(bullets, physics.apply)
-    enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
-    var collisions = physics.collideLists(enemies, bullets)
-    score += core.reduce(
-      0,
-      core.map(collisions, 
-        function(item) { return item.collision ? balancing.level() : 0}),
-      function(current, x) { return current+x})
-    enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
-    bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
+    enemies = core.updatein(enemies, physics.apply)
+    bullets = core.updatein(bullets, physics.apply)
+    enemies = core.updatein(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
+    collisions = physics.collideLists(enemies, bullets)
+    score = updateScoreFromCollisions(score, collisions)
+    enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
+    bullets = rect.killUsing(bullets, collisions, secondItemFromCollision)
+    collisions = physics.collideWithList(player, enemies)
+    health = updateHealthFromCollisions(health, collisions)
+    enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
+    timeLeft -= frameTime
 
     clear()
     rect.draw(player)
@@ -46,9 +55,34 @@ domReady(function() {
     core.each(bullets, function(bullet) { rect.draw(bullet) })
     text.draw('Time left: ' + parseInt(timeLeft / 1000, 10), 500, 20, 18)
     text.draw('Score: ' + score, 10, 20, 18)
-    timeLeft -= frameTime
+    text.draw('Health: ' + health, 10, 480, 18)
   }, frameTime)
 })
+
+
+function firstItemFromCollision(item) {
+  return item.collision ? item.one : null
+}
+
+function secondItemFromCollision(item) {
+  return item.collision ? item.two : null
+}
+
+function updateHealthFromCollisions(health, collisions) {
+  return health + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? balancing.level() : 0},
+    function(current, x) { return current - x})
+}
+
+function updateScoreFromCollisions(score, collisions) {
+  return score + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? balancing.level() : 0},
+    function(current, x) { return current+x})
+}
 
 function clear() {
   canvas.context().fillStyle = '#000'
@@ -83,6 +117,10 @@ var _level = 0
 
 exports.levelup = function() {
   _level++
+}
+
+exports.level = function() {
+  return _level
 }
 
 exports.bulletspeed = function() {
@@ -155,7 +193,8 @@ function extraArguments(items) {
     fnArgs.splice(0, 2)
   return fnArgs
 }
-var map = exports.map = function(items, fn) {
+
+var updatein = exports.updatein = function(items, fn) {
   var fnArgs = extraArguments(arguments)
   fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
@@ -165,9 +204,9 @@ var map = exports.map = function(items, fn) {
   return items
 }
 
-var reduce = exports.reduce = function(current, items, fn) {
-  for(var i =0 ; i < items.length; i++)
-    current = fn(current, items[i])
+var reduce = exports.reduce = function(current, input, mapfn, reducefn) {
+  for(var i =0 ; i < input.length; i++)
+    current = reducefn(current, mapfn(input[i]))
   return current
 }
 
@@ -296,6 +335,7 @@ exports.vectorBetween = function(srcx, srcy, destx, desty) {
 
 },{}],7:[function(require,module,exports){
 var canvas = require('./canvas')
+  , core = require('./core')
 
 var _collisionBuffer = new Array(1000)
 for(var i = 0 ; i < 1000; i++)
@@ -309,16 +349,34 @@ exports.apply = function(rect) {
   return rect.boundscheck(rect)
 }
 
+
+exports.collideWithList = function(rect, list) {
+  var current = 0
+  _collisionBuffer = core.updatein(_collisionBuffer, clearCollision)
+  for(var i = 0; i < list.length; i++) {
+    if(!collide(list[i], rect)) continue
+      _collisionBuffer[current].collision = true
+      _collisionBuffer[current++].one = i
+  }
+  return _collisionBuffer
+}
+
+
+function clearCollision(item) {
+  item.collision = false
+  return item
+}
+
+
 exports.collideLists = function(one, two) {
   var current = 0
-  _collisionBuffer[0].collision = false
+  _collisionBuffer = core.updatein(_collisionBuffer, clearCollision)
   for(var i = 0; i < one.length; i++) {
     for(var j = 0 ; j < two.length; j++) {
       if(!collide(one[i], two[j])) continue
       _collisionBuffer[current].collision = true
       _collisionBuffer[current].one = i
-      _collisionBuffer[current].two = j 
-      _collisionBuffer[++current].collision = false
+      _collisionBuffer[current++].two = j 
     }
   }
   return _collisionBuffer
@@ -357,7 +415,7 @@ exports.boundsbounce = function(rect) {
   return rect
 }
 
-},{"./canvas":3}],8:[function(require,module,exports){
+},{"./canvas":3,"./core":4}],8:[function(require,module,exports){
 var canvas = require('./canvas')
   , maths = require('./maths')
   , physics = require('./physics')

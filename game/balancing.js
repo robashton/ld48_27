@@ -4,6 +4,10 @@ exports.levelup = function() {
   _level++
 }
 
+exports.level = function() {
+  return _level
+}
+
 exports.bulletspeed = function() {
   return 2.5
 }

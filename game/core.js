@@ -12,7 +12,8 @@ function extraArguments(items) {
     fnArgs.splice(0, 2)
   return fnArgs
 }
-var map = exports.map = function(items, fn) {
+
+var updatein = exports.updatein = function(items, fn) {
   var fnArgs = extraArguments(arguments)
   fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
@@ -22,9 +23,9 @@ var map = exports.map = function(items, fn) {
   return items
 }
 
-var reduce = exports.reduce = function(current, items, fn) {
-  for(var i =0 ; i < items.length; i++)
-    current = fn(current, items[i])
+var reduce = exports.reduce = function(current, input, mapfn, reducefn) {
+  for(var i =0 ; i < input.length; i++)
+    current = reducefn(current, mapfn(input[i]))
   return current
 }
 

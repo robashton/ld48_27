@@ -1,4 +1,5 @@
 var canvas = require('./canvas')
+  , core = require('./core')
 
 var _collisionBuffer = new Array(1000)
 for(var i = 0 ; i < 1000; i++)
@@ -12,16 +13,34 @@ exports.apply = function(rect) {
   return rect.boundscheck(rect)
 }
 
+
+exports.collideWithList = function(rect, list) {
+  var current = 0
+  _collisionBuffer = core.updatein(_collisionBuffer, clearCollision)
+  for(var i = 0; i < list.length; i++) {
+    if(!collide(list[i], rect)) continue
+      _collisionBuffer[current].collision = true
+      _collisionBuffer[current++].one = i
+  }
+  return _collisionBuffer
+}
+
+
+function clearCollision(item) {
+  item.collision = false
+  return item
+}
+
+
 exports.collideLists = function(one, two) {
   var current = 0
-  _collisionBuffer[0].collision = false
+  _collisionBuffer = core.updatein(_collisionBuffer, clearCollision)
   for(var i = 0; i < one.length; i++) {
     for(var j = 0 ; j < two.length; j++) {
       if(!collide(one[i], two[j])) continue
       _collisionBuffer[current].collision = true
       _collisionBuffer[current].one = i
-      _collisionBuffer[current].two = j 
-      _collisionBuffer[++current].collision = false
+      _collisionBuffer[current++].two = j 
     }
   }
   return _collisionBuffer

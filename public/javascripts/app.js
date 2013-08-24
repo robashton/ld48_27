@@ -2,19 +2,19 @@
 var domReady = require('domready')
   , rect = require('./game/rect')
   , physics = require('./game/physics')
+  , core = require('./game/core')
 
 
 domReady(function() {
   var canvas = document.getElementById('game')
     , context = canvas.getContext('2d')
     , player = rect.create(320, 240, 3, 3)
-    , enemies = repeat(100, spawnEnemy)
-
+    , enemies = core.repeat(100, spawnEnemy)
   setInterval(function() {
     context.fillStyle = '#000'
     context.fillRect(0,0, canvas.width, canvas.height)
     player = physics.apply(player)
-    enemies = updateEach(enemies, physics.apply)
+    enemies = core.map(enemies, physics.apply)
     drawPlayer(context, player)
     drawEnemies(context, enemies)
   }, 1000/30)
@@ -32,45 +32,45 @@ function vectorFromDegrees(degrees) {
     y: Math.sin(degrees)
   }
 }
+function drawPlayer(context, player) {
+  rect.draw(context, player)
+}
 
-function updateEach(items, fn) {
+function drawEnemies(context, enemies) {
+  core.each(enemies, function(enemy) { rect.draw(context, enemy) })
+}
+
+
+
+},{"./game/core":2,"./game/physics":3,"./game/rect":4,"domready":5}],2:[function(require,module,exports){
+var each = exports.each = function(items, fn) {
+  for(var i = 0 ; i < items.length; i++) {
+    fn(items[i])
+  }
+}
+
+var map = exports.map = function(items, fn) {
   for(var i = 0 ; i < items.length; i++) {
     items[i] = fn(items[i])
   }
   return items
 }
 
-function repeat(times, fn) {
+var repeat = exports.repeat = function(times, fn) {
   var result = new Array(times)
   for(var i = 0; i < times; i++)
     result[i] = fn()
   return result
 }
 
-function each(items, fn) {
-  for(var i = 0 ; i < items.length; i++) {
-    fn(items[i])
-  }
-}
-
-function drawPlayer(context, player) {
-  rect.draw(context, player)
-}
-
-function drawEnemies(context, enemies) {
-  each(enemies, function(enemy) { rect.draw(context, enemy) })
-}
-
-
-
-},{"./game/physics":2,"./game/rect":3,"domready":4}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 var apply = exports.apply = function(rect) {
   rect.x += rect.vx
   rect.y += rect.vy
   return rect
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var draw = exports.draw =  function(context, rect) {
   context.fillStyle = rect.render.colour
   context.fillRect(rect.x, rect.y, rect.w, rect.h)
@@ -90,7 +90,7 @@ var create = exports.create = function(x, y, w, h) {
   }
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */

@@ -33,7 +33,7 @@ domReady(function() {
     overContainer.style.display = 'none'
     playContainer.style.display = 'block'
 
-    var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
+    var player = createPlayer() 
       , enemies = null
       , bullets = core.repeat(1000, createBullet)
       , timeLeft = -1
@@ -86,9 +86,6 @@ domReady(function() {
       text.draw('Health: ' + health, 10, 480, 18)
     }, frameTime)
   }
-
-
-
 })
 
 
@@ -117,8 +114,16 @@ function updateScoreFromCollisions(score, collisions) {
 }
 
 function clear() {
+  canvas.context().globalAlpha = 0.2
   canvas.context().fillStyle = '#000'
   canvas.context().fillRect(0,0, canvas.width(), canvas.height())
+  canvas.context().globalAlpha = 1.0
+}
+
+function createPlayer() {
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
+  player.render.colour = '#0F0'
+  return player
 }
 
 function createBullet() {
@@ -126,15 +131,18 @@ function createBullet() {
   bullet.alive = false
   bullet.boundscheck = physics.boundskill
   bullet.friction = 0
+  bullet.render.colour = '#FF0'
   return bullet
 }
 
 function spawnEnemy() {
   var degrees = Math.random()  * (Math.PI * 2)
   var direction = vectorFromDegrees(degrees)
-  return rect.create(
+  var enemy = rect.create(
     canvas.halfwidth() * direction.x + canvas.halfwidth(), 
     canvas.halfheight()*direction.y + canvas.halfheight(), 5, 5)
+  enemy.render.colour = '#F00'
+  return enemy
 }
 
 function vectorFromDegrees(degrees) {

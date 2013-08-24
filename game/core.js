@@ -22,6 +22,12 @@ var map = exports.map = function(items, fn) {
   return items
 }
 
+var reduce = exports.reduce = function(current, items, fn) {
+  for(var i =0 ; i < items.length; i++)
+    current = fn(current, items[i])
+  return current
+}
+
 var repeat = exports.repeat = function(times, fn) {
   var fnArgs = extraArguments(arguments)
   var result = new Array(times)

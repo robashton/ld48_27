@@ -15,6 +15,7 @@ domReady(function() {
     , bullets = core.repeat(1000, createBullet)
     , timeLeft = -1
     , frameTime  = 1000 / 30
+    , score = 0
 
   setInterval(function() {
     if(timeLeft < 0) {
@@ -30,6 +31,11 @@ domReady(function() {
     bullets = core.map(bullets, physics.apply)
     enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
     var collisions = physics.collideLists(enemies, bullets)
+    score += core.reduce(
+      0,
+      core.map(collisions, 
+        function(item) { return item.collision ? balancing.level() : 0}),
+      function(current, x) { return current+x})
     enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
     bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
 
@@ -37,7 +43,8 @@ domReady(function() {
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
     core.each(bullets, function(bullet) { rect.draw(bullet) })
-    text.draw(parseInt(timeLeft / 1000, 10), 600, 40, 18)
+    text.draw('Time left: ' + parseInt(timeLeft / 1000, 10), 500, 20, 18)
+    text.draw('Score: ' + score, 10, 20, 18)
     timeLeft -= frameTime
   }, frameTime)
 })

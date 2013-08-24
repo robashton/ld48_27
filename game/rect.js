@@ -18,6 +18,12 @@ var create = exports.create = function(x, y, w, h) {
   }
 }
 
+exports.applyImpulse = function(rect, vx, vy, amount) {
+  rect.vx += vx*amount;
+  rect.vy += vy*amount;
+  return rect
+}
+
 var vectorTo = function(src, dest) {
   var x = dest.x - src.x
     , y = dest.y - src.y

@@ -1,0 +1,15 @@
+{
+  "name": "ld48_27",
+  "version": "0.0.0",
+  "description": "A Ludum dare entry",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/robashton/ld48_27.git"
+  },
+  "author": "Rob Ashton",
+  "license": "MIT"
+}

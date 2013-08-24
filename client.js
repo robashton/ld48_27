@@ -3,21 +3,26 @@ var domReady = require('domready')
   , physics = require('./game/physics')
   , core = require('./game/core')
 
-
 domReady(function() {
   var canvas = document.getElementById('game')
     , context = canvas.getContext('2d')
     , player = rect.create(320, 240, 3, 3)
-    , enemies = core.repeat(100, spawnEnemy)
+    , enemies = core.repeat(10000, spawnEnemy)
+
   setInterval(function() {
-    context.fillStyle = '#000'
-    context.fillRect(0,0, canvas.width, canvas.height)
+    clear(context, canvas)
     player = physics.apply(player)
     enemies = core.map(enemies, physics.apply)
+    enemies = core.map(enemies, rect.gravitateTowards, player, 0.5)
     drawPlayer(context, player)
     drawEnemies(context, enemies)
   }, 1000/30)
 })
+
+function clear(context, canvas) {
+  context.fillStyle = '#000'
+  context.fillRect(0,0, canvas.width, canvas.height)
+}
 
 function spawnEnemy() {
   var degrees = Math.random()  * (Math.PI * 2)

@@ -16,3 +16,22 @@ var create = exports.create = function(x, y, w, h) {
     }
   }
 }
+
+var vectorTo = function(src, dest) {
+  var x = dest.x - src.x
+    , y = dest.y - src.y
+    , m = Math.sqrt((x*x)+(y*y))
+  
+
+  return {
+    x: x/m,
+    y: y/m
+  }
+}
+
+exports.gravitateTowards = function(src, dest, power) {
+  var vector = vectorTo(src, dest)
+  src.vx += vector.x * power
+  src.vy += vector.y * power
+  return src
+}

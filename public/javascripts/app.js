@@ -4,21 +4,26 @@ var domReady = require('domready')
   , physics = require('./game/physics')
   , core = require('./game/core')
 
-
 domReady(function() {
   var canvas = document.getElementById('game')
     , context = canvas.getContext('2d')
     , player = rect.create(320, 240, 3, 3)
-    , enemies = core.repeat(100, spawnEnemy)
+    , enemies = core.repeat(10000, spawnEnemy)
+
   setInterval(function() {
-    context.fillStyle = '#000'
-    context.fillRect(0,0, canvas.width, canvas.height)
+    clear(context, canvas)
     player = physics.apply(player)
     enemies = core.map(enemies, physics.apply)
+    enemies = core.map(enemies, rect.gravitateTowards, player, 0.5)
     drawPlayer(context, player)
     drawEnemies(context, enemies)
   }, 1000/30)
 })
+
+function clear(context, canvas) {
+  context.fillStyle = '#000'
+  context.fillRect(0,0, canvas.width, canvas.height)
+}
 
 function spawnEnemy() {
   var degrees = Math.random()  * (Math.PI * 2)
@@ -44,22 +49,34 @@ function drawEnemies(context, enemies) {
 
 },{"./game/core":2,"./game/physics":3,"./game/rect":4,"domready":5}],2:[function(require,module,exports){
 var each = exports.each = function(items, fn) {
+  var fnArgs = extraArguments(arguments)
+  fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
-    fn(items[i])
+    fnArgs[0] = items[i]
+    fn.apply(this, fnArgs)
   }
 }
-
+function extraArguments(items) {
+  var fnArgs = [].slice.call(items)
+  if(fnArgs.length > 2)
+    fnArgs.splice(0, 2)
+  return fnArgs
+}
 var map = exports.map = function(items, fn) {
+  var fnArgs = extraArguments(arguments)
+  fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
-    items[i] = fn(items[i])
+    fnArgs[0] = items[i]
+    items[i] = fn.apply(this, fnArgs)
   }
   return items
 }
 
 var repeat = exports.repeat = function(times, fn) {
+  var fnArgs = extraArguments(arguments)
   var result = new Array(times)
   for(var i = 0; i < times; i++)
-    result[i] = fn()
+    result[i] = fn.apply(this, fnArgs)
   return result
 }
 
@@ -88,6 +105,25 @@ var create = exports.create = function(x, y, w, h) {
       colour: '#FFF'
     }
   }
+}
+
+var vectorTo = function(src, dest) {
+  var x = dest.x - src.x
+    , y = dest.y - src.y
+    , m = Math.sqrt((x*x)+(y*y))
+  
+
+  return {
+    x: x/m,
+    y: y/m
+  }
+}
+
+exports.gravitateTowards = function(src, dest, power) {
+  var vector = vectorTo(src, dest)
+  src.vx += vector.x * power
+  src.vy += vector.y * power
+  return src
 }
 
 },{}],5:[function(require,module,exports){

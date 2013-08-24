@@ -21,9 +21,12 @@ domReady(function() {
     enemies = core.map(enemies, physics.apply)
     bullets = core.map(bullets, physics.apply)
     enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
+    var collisions = physics.collideLists(enemies, bullets)
+    enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
+    bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
-    core.each(bullets, function(bullet) { if(bullet.alive) rect.draw(bullet) })
+    core.each(bullets, function(bullet) { rect.draw(bullet) })
   }, 1000/30)
 })
 

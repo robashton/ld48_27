@@ -22,9 +22,12 @@ domReady(function() {
     enemies = core.map(enemies, physics.apply)
     bullets = core.map(bullets, physics.apply)
     enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
+    var collisions = physics.collideLists(enemies, bullets)
+    enemies = rect.killUsing(enemies, collisions, function(item) { return item.collision ? item.one : null})
+    bullets = rect.killUsing(bullets, collisions, function(item) { return item.collision ? item.two : null})
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
-    core.each(bullets, function(bullet) { if(bullet.alive) rect.draw(bullet) })
+    core.each(bullets, function(bullet) { rect.draw(bullet) })
   }, 1000/30)
 })
 
@@ -190,7 +193,9 @@ var _left = false,
      index = i
      break
    }
-   if(index < 0) return existing 
+   if(index < 0) {
+    return existing  
+   }
    existing[index].alive = true
    existing[index].x = player.x
    existing[index].y = player.y
@@ -261,12 +266,40 @@ exports.vectorBetween = function(srcx, srcy, destx, desty) {
 },{}],7:[function(require,module,exports){
 var canvas = require('./canvas')
 
+var _collisionBuffer = new Array(1000)
+for(var i = 0 ; i < 1000; i++)
+  _collisionBuffer[i] = { collision: false, one: 0, two: 0 }
+
 exports.apply = function(rect) {
   rect.x += rect.vx
   rect.y += rect.vy
   rect.vx *= (1.0 - rect.friction)
   rect.vy *= (1.0 - rect.friction)
   return rect.boundscheck(rect)
+}
+
+exports.collideLists = function(one, two) {
+  var current = 0
+  _collisionBuffer[0].collision = false
+  for(var i = 0; i < one.length; i++) {
+    for(var j = 0 ; j < two.length; j++) {
+      if(!collide(one[i], two[j])) continue
+      _collisionBuffer[current].collision = true
+      _collisionBuffer[current].one = i
+      _collisionBuffer[current].two = j 
+      _collisionBuffer[++current].collision = false
+    }
+  }
+  return _collisionBuffer
+}
+
+var collide = exports.collide = function(one, two) {
+  if(!one.alive || !two.alive) return false
+  if(one.x + one.w < two.x) return false
+  if(one.y + one.h < two.y) return false
+  if(two.x + two.w < one.x) return false
+  if(two.y + two.h < one.y) return false
+  return true
 }
 
 function outsideHorizontal(rect) {
@@ -299,6 +332,7 @@ var canvas = require('./canvas')
   , physics = require('./physics')
 
 exports.draw =  function(rect) {
+  if(!rect.alive) return
   canvas.context().fillStyle = rect.render.colour
   canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
 }
@@ -318,6 +352,15 @@ exports.create = function(x, y, w, h) {
       colour: '#FFF'
     }
   }
+}
+
+exports.killUsing = function(rects, list, fn) {
+  for(var i =0 ; i < list.length; i++) {
+    var index = fn(list[i])
+    if(index === null) return rects
+    rects[index].alive = false
+  }
+  return rects
 }
 
 exports.applyImpulse = function(rect, vx, vy, amount) {

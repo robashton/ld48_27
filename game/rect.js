@@ -3,6 +3,7 @@ var canvas = require('./canvas')
   , physics = require('./physics')
 
 exports.draw =  function(rect) {
+  if(!rect.alive) return
   canvas.context().fillStyle = rect.render.colour
   canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
 }
@@ -22,6 +23,15 @@ exports.create = function(x, y, w, h) {
       colour: '#FFF'
     }
   }
+}
+
+exports.killUsing = function(rects, list, fn) {
+  for(var i =0 ; i < list.length; i++) {
+    var index = fn(list[i])
+    if(index === null) return rects
+    rects[index].alive = false
+  }
+  return rects
 }
 
 exports.applyImpulse = function(rect, vx, vy, amount) {

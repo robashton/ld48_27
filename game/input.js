@@ -42,7 +42,9 @@ var _left = false,
      index = i
      break
    }
-   if(index < 0) return existing 
+   if(index < 0) {
+    return existing  
+   }
    existing[index].alive = true
    existing[index].x = player.x
    existing[index].y = player.y

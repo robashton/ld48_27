@@ -4,10 +4,12 @@ var domReady = require('domready')
   , physics = require('./game/physics')
   , core = require('./game/core')
   , input = require('./game/input')
+  , balancing = require('./game/balancing')
 
 domReady(function() {
   var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
     , enemies = core.repeat(100, spawnEnemy)
+    , bullets = core.repeat(1000, createBullet)
   
   input.init()
 
@@ -15,16 +17,27 @@ domReady(function() {
     clear()
     player = physics.apply(player)
     player = input.applyImpulses(player)
+    bullets = input.applyBullets(bullets, player)
     enemies = core.map(enemies, physics.apply)
-    enemies = core.map(enemies, rect.gravitateTowards, player, 0.01)
+    bullets = core.map(bullets, physics.apply)
+    enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
+    core.each(bullets, function(bullet) { if(bullet.alive) rect.draw(bullet) })
   }, 1000/30)
 })
 
 function clear() {
   canvas.context().fillStyle = '#000'
   canvas.context().fillRect(0,0, canvas.width(), canvas.height())
+}
+
+function createBullet() {
+  var bullet = rect.create(0,0,3,3)
+  bullet.alive = false
+  bullet.boundscheck = physics.boundskill
+  bullet.friction = 0
+  return bullet
 }
 
 function spawnEnemy() {

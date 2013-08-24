@@ -5,10 +5,12 @@ var domReady = require('domready')
   , physics = require('./game/physics')
   , core = require('./game/core')
   , input = require('./game/input')
+  , balancing = require('./game/balancing')
 
 domReady(function() {
   var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
     , enemies = core.repeat(100, spawnEnemy)
+    , bullets = core.repeat(1000, createBullet)
   
   input.init()
 
@@ -16,16 +18,27 @@ domReady(function() {
     clear()
     player = physics.apply(player)
     player = input.applyImpulses(player)
+    bullets = input.applyBullets(bullets, player)
     enemies = core.map(enemies, physics.apply)
-    enemies = core.map(enemies, rect.gravitateTowards, player, 0.01)
+    bullets = core.map(bullets, physics.apply)
+    enemies = core.map(enemies, rect.gravitateTowards, player, balancing.enemyImpulse()) 
     rect.draw(player)
     core.each(enemies, function(enemy) { rect.draw(enemy) })
+    core.each(bullets, function(bullet) { if(bullet.alive) rect.draw(bullet) })
   }, 1000/30)
 })
 
 function clear() {
   canvas.context().fillStyle = '#000'
   canvas.context().fillRect(0,0, canvas.width(), canvas.height())
+}
+
+function createBullet() {
+  var bullet = rect.create(0,0,3,3)
+  bullet.alive = false
+  bullet.boundscheck = physics.boundskill
+  bullet.friction = 0
+  return bullet
 }
 
 function spawnEnemy() {
@@ -43,7 +56,20 @@ function vectorFromDegrees(degrees) {
   }
 }
 
-},{"./game/canvas":2,"./game/core":3,"./game/input":4,"./game/physics":5,"./game/rect":6,"domready":7}],2:[function(require,module,exports){
+},{"./game/balancing":2,"./game/canvas":3,"./game/core":4,"./game/input":5,"./game/physics":7,"./game/rect":8,"domready":9}],2:[function(require,module,exports){
+exports.bulletspeed = function() {
+  return 2.5
+}
+
+exports.enemyImpulse = function() {
+  return 0.01
+}
+
+exports.playerImpulse = function() {
+  return 0.1
+}
+
+},{}],3:[function(require,module,exports){
 
 var _canvas = null
 var canvas = exports.canvas = function() {
@@ -69,6 +95,14 @@ exports.halfwidth = function() {
   return canvas().width / 2
 }
 
+exports.left = function() {
+  return canvas().offsetLeft
+}
+
+exports.top = function() {
+  return canvas().offsetTop
+}
+
 exports.halfheight = function() {
   return canvas().height / 2
 }
@@ -78,7 +112,7 @@ exports.height = function() {
 }
  
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var each = exports.each = function(items, fn) {
   var fnArgs = extraArguments(arguments)
   fnArgs.unshift(null)
@@ -111,8 +145,12 @@ var repeat = exports.repeat = function(times, fn) {
   return result
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var rect = require('./rect')
+  , canvas = require('./canvas')
+  , throttleit = require('throttleit')
+  , maths = require('./maths')
+  , balancing = require('./balancing')
 
 var _left = false,
     _right = false,
@@ -122,22 +160,45 @@ var _left = false,
     _firingLocation = {
       x: 0,
       y: 0
-    }
+    },
+    _firingMethod = null
 
  exports.init = function() {
    document.onkeydown = onKeyDown
    document.onkeyup = onKeyUp
    document.onmousedown = onMouseDown
    document.onmouseup = onMouseUp
+   document.onmousemove = onMouseMove
+   _firingMethod = throttleit(addBulletTo, 100)
  }
 
  exports.applyImpulses = function(player) {
    var x = _left ? -1 : _right ? 1 : 0 
      , y = _up ? -1 : _down ? 1 : 0
-   return rect.applyImpulse(player, x, y, 0.1)
+    return rect.applyImpulse(player, x, y, balancing.playerImpulse())
  }
 
- exports.applyBullets = function(existing) {
+ exports.applyBullets = function(existing, player) {
+   if(!_firing) return existing
+   return _firingMethod(existing, player)
+ }
+
+ function addBulletTo(existing, player) {
+   var index = -1
+   for(var i =0 ; i < existing.length; i++) {
+     if(existing[i].alive) continue
+     index = i
+     break
+   }
+   if(index < 0) return existing 
+   existing[index].alive = true
+   existing[index].x = player.x
+   existing[index].y = player.y
+   var firingVector = maths.vectorBetween(
+     player.x, player.y, 
+     _firingLocation.x, _firingLocation.y)
+   existing[index].vx = firingVector.x * balancing.bulletspeed()
+   existing[index].vy = firingVector.y * balancing.bulletspeed()
    return existing
  }
 
@@ -148,12 +209,17 @@ var _left = false,
    onKeyChange(e, false)
  }
 
- function onMouseDown(e) {
+ function onMouseMove(e) {
+   _firingLocation.x = e.x - canvas.left()
+   _firingLocation.y = e.y - canvas.top()
+ }
+
+ function onMouseDown() {
    _firing = true
    return false
  }
 
- function onMouseUp(e) {
+ function onMouseUp() {
    _firing = false
    return false
  }
@@ -181,29 +247,56 @@ var _left = false,
  }
 
 
-},{"./rect":6}],5:[function(require,module,exports){
+},{"./balancing":2,"./canvas":3,"./maths":6,"./rect":8,"throttleit":10}],6:[function(require,module,exports){
+exports.vectorBetween = function(srcx, srcy, destx, desty) {
+  var x = destx - srcx
+    , y = desty - srcy
+    , m = Math.sqrt((x*x)+(y*y))
+  return {
+    x: x/m,
+    y: y/m
+  }
+}
+
+},{}],7:[function(require,module,exports){
 var canvas = require('./canvas')
 
-var apply = exports.apply = function(rect) {
+exports.apply = function(rect) {
   rect.x += rect.vx
   rect.y += rect.vy
   rect.vx *= (1.0 - rect.friction)
   rect.vy *= (1.0 - rect.friction)
-  return restrictBoundsOf(rect)
+  return rect.boundscheck(rect)
 }
 
-function restrictBoundsOf(rect) {
-  if((rect.x < 0 && rect.vx < 0) ||
-    (rect.x > canvas.width() && rect.vx > 0))
+function outsideHorizontal(rect) {
+  return (rect.x < 0 && rect.vx < 0) ||
+    (rect.x > canvas.width() && rect.vx > 0)
+}
+
+function outsideVertical(rect) {
+  return (rect.y < 0 && rect.vy < 0) ||
+    (rect.y > canvas.height() && rect.vy > 0)
+}
+
+exports.boundskill = function(rect) {
+  if(outsideHorizontal(rect) || outsideVertical(rect))
+    rect.alive = false
+  return rect
+}
+
+exports.boundsbounce = function(rect) {
+  if(outsideHorizontal(rect))
       rect.vx = -rect.vx
-  if((rect.y < 0 && rect.vy < 0) ||
-    (rect.y > canvas.height() && rect.vy > 0))
+  if(outsideVertical(rect))
       rect.vy = -rect.vy
   return rect
 }
 
-},{"./canvas":2}],6:[function(require,module,exports){
+},{"./canvas":3}],8:[function(require,module,exports){
 var canvas = require('./canvas')
+  , maths = require('./maths')
+  , physics = require('./physics')
 
 exports.draw =  function(rect) {
   canvas.context().fillStyle = rect.render.colour
@@ -218,6 +311,8 @@ exports.create = function(x, y, w, h) {
     h: h,
     vx: 0,
     vy: 0,
+    alive: true,
+    boundscheck: physics.boundsbounce,
     friction: 0.01,
     render: {
       colour: '#FFF'
@@ -231,16 +326,8 @@ exports.applyImpulse = function(rect, vx, vy, amount) {
   return rect
 }
 
-var vectorTo = function(src, dest) {
-  var x = dest.x - src.x
-    , y = dest.y - src.y
-    , m = Math.sqrt((x*x)+(y*y))
-  
-
-  return {
-    x: x/m,
-    y: y/m
-  }
+var vectorTo = exports.vectorTo = function(src, dest) {
+  return maths.vectorBetween(src.x, src.y, dest.x, dest.y)
 }
 
 exports.gravitateTowards = function(src, dest, power) {
@@ -250,7 +337,7 @@ exports.gravitateTowards = function(src, dest, power) {
   return src
 }
 
-},{"./canvas":2}],7:[function(require,module,exports){
+},{"./canvas":3,"./maths":6,"./physics":7}],9:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -306,5 +393,37 @@ exports.gravitateTowards = function(src, dest, power) {
       loaded ? fn() : fns.push(fn)
     })
 })
+},{}],10:[function(require,module,exports){
+
+/**
+ * Module exports.
+ */
+
+module.exports = throttle;
+
+/**
+ * Returns a new function that, when invoked, invokes `func` at most one time per
+ * `wait` milliseconds.
+ *
+ * @param {Function} func The `Function` instance to wrap.
+ * @param {Number} wait The minimum number of milliseconds that must elapse in between `func` invokations.
+ * @return {Function} A new function that wraps the `func` function passed in.
+ * @api public
+ */
+
+function throttle (func, wait) {
+  var rtn; // return value
+  var last = 0; // last invokation timestamp
+  return function throttled () {
+    var now = new Date().getTime();
+    var delta = now - last;
+    if (delta >= wait) {
+      rtn = func.apply(this, arguments);
+      last = now;
+    }
+    return rtn;
+  };
+}
+
 },{}]},{},[1])
 ;

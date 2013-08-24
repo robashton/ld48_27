@@ -1,4 +1,6 @@
 var canvas = require('./canvas')
+  , maths = require('./maths')
+  , physics = require('./physics')
 
 exports.draw =  function(rect) {
   canvas.context().fillStyle = rect.render.colour
@@ -13,6 +15,8 @@ exports.create = function(x, y, w, h) {
     h: h,
     vx: 0,
     vy: 0,
+    alive: true,
+    boundscheck: physics.boundsbounce,
     friction: 0.01,
     render: {
       colour: '#FFF'
@@ -26,16 +30,8 @@ exports.applyImpulse = function(rect, vx, vy, amount) {
   return rect
 }
 
-var vectorTo = function(src, dest) {
-  var x = dest.x - src.x
-    , y = dest.y - src.y
-    , m = Math.sqrt((x*x)+(y*y))
-  
-
-  return {
-    x: x/m,
-    y: y/m
-  }
+var vectorTo = exports.vectorTo = function(src, dest) {
+  return maths.vectorBetween(src.x, src.y, dest.x, dest.y)
 }
 
 exports.gravitateTowards = function(src, dest, power) {

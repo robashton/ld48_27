@@ -23,6 +23,14 @@ exports.halfwidth = function() {
   return canvas().width / 2
 }
 
+exports.left = function() {
+  return canvas().offsetLeft
+}
+
+exports.top = function() {
+  return canvas().offsetTop
+}
+
 exports.halfheight = function() {
   return canvas().height / 2
 }

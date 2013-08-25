@@ -2,10 +2,25 @@ var canvas = require('./canvas')
   , maths = require('./maths')
   , physics = require('./physics')
 
+var _images = { }
+
+function image(path) {
+  return _images[path] || (function() {
+    _images[path] = new Image()
+    _images[path].src = path
+    return _images[path]
+  })()
+}
+
 exports.draw =  function(rect) {
   if(!rect.alive) return
-  canvas.context().fillStyle = rect.render.colour
-  canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
+  if(rect.render.image) {
+    canvas.context().drawImage(image(rect.render.image), 
+      rect.x, rect.y, rect.w, rect.h)
+  } else {
+    canvas.context().fillStyle = rect.render.colour
+    canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
+  }
 }
 
 exports.create = function(x, y, w, h) {

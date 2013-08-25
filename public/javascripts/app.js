@@ -260,6 +260,7 @@ function clear() {
 
 function createPlayer() {
   var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 5, 5)
+  player.render.image = 'player.png'
   player.friction = balancing.playerFriction()
   player.render.colour = '#0F0'
   return player
@@ -271,6 +272,7 @@ function createPowerup() {
   powerup.boundscheck = physics.boundskill
   powerup.friction = 0
   powerup.render.colour = '#00FF00'
+  powerup.render.image = 'powerup.png'
   return powerup
 }
 
@@ -298,6 +300,7 @@ function createEnemy() {
   enemy.boundscheck = physics.boundsbounce
   enemy.friction = 0.1
   enemy.render.colour = '#FF0'
+  enemy.render.image = 'redenemy.png'
   return enemy
 }
 
@@ -694,10 +697,25 @@ var canvas = require('./canvas')
   , maths = require('./maths')
   , physics = require('./physics')
 
+var _images = { }
+
+function image(path) {
+  return _images[path] || (function() {
+    _images[path] = new Image()
+    _images[path].src = path
+    return _images[path]
+  })()
+}
+
 exports.draw =  function(rect) {
   if(!rect.alive) return
-  canvas.context().fillStyle = rect.render.colour
-  canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
+  if(rect.render.image) {
+    canvas.context().drawImage(image(rect.render.image), 
+      rect.x, rect.y, rect.w, rect.h)
+  } else {
+    canvas.context().fillStyle = rect.render.colour
+    canvas.context().fillRect(rect.x, rect.y, rect.w, rect.h)
+  }
 }
 
 exports.create = function(x, y, w, h) {

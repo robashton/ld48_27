@@ -259,6 +259,7 @@ function clear() {
 
 function createPlayer() {
   var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 5, 5)
+  player.render.image = 'player.png'
   player.friction = balancing.playerFriction()
   player.render.colour = '#0F0'
   return player
@@ -270,6 +271,7 @@ function createPowerup() {
   powerup.boundscheck = physics.boundskill
   powerup.friction = 0
   powerup.render.colour = '#00FF00'
+  powerup.render.image = 'powerup.png'
   return powerup
 }
 
@@ -297,6 +299,7 @@ function createEnemy() {
   enemy.boundscheck = physics.boundsbounce
   enemy.friction = 0.1
   enemy.render.colour = '#FF0'
+  enemy.render.image = 'redenemy.png'
   return enemy
 }
 

@@ -3,7 +3,7 @@ var each = exports.each = function(items, fn) {
   fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
     fnArgs[0] = items[i]
-    fn.apply(this, fnArgs)
+    if(fn.apply(this, fnArgs) === false) break
   }
 }
 function extraArguments(items) {

@@ -18,6 +18,7 @@ domReady(function() {
     , overContainer = document.getElementById('over')
     , scoreContainer = document.getElementById('score')
     , started = false
+    , beat = new Sound('bass')
 
   btnStart.onclick = startGame
   btnRestart.onclick = startGame
@@ -41,7 +42,6 @@ domReady(function() {
 
     setTimeout(playBeat, 1000)
 
-
     function playBeat() {
       if(!player.alive) return
       if(timeLeft < 6000) {
@@ -55,7 +55,6 @@ domReady(function() {
       , bullets = core.repeat(250, createBullet)
       , explosions = core.repeat(500, createExplosion)
       , powerups = core.repeat(10, createPowerup)
-      , beat = new Sound('bass')
       , timeLeft = 10000
       , spawnTimer = -1
       , frameTime  = 1000 / 30
@@ -110,9 +109,24 @@ domReady(function() {
       enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
       bullets = rect.killUsing(bullets, collisions, secondItemFromCollision)
 
+      // It all fell over around about this point (okay, actually much earlier, hah)
       collisions = physics.collideWithList(player, powerups)
-      health = updateHealthFromPowerups(health, collisions)
-      timeLeft = updateTimeFromPowerups(timeLeft, collisions)
+      core.each(collisions, function(item) {
+        if(!item.collision) return false
+        switch(powerups[item.one].type) {
+          case 'health':
+            health = Math.min(100, health + 20)
+            break;
+          case 'time':
+            timeLeft = 10000
+            break;
+          case 'smartbomb':
+            explosions = explosionsForAll(explosions, enemies)
+            enemies = destroyAllEnemies(enemies)
+            break;
+        }
+      })
+
       powerups = rect.killUsing(powerups, collisions, firstItemFromCollision)
       explosions = updateExplosionsFromCollisions(explosions, collisions, powerups)
 
@@ -256,22 +270,6 @@ function updateHealthFromCollisions(health, collisions) {
     function(current, x) { return current - x})
 }
 
-function updateHealthFromPowerups(health, collisions) {
-  return Math.min(health + core.reduce(
-    0,
-    collisions,
-    function(item) { return item.collision ? 10 : 0},
-    function(current, x) { return current + x}), 100)
-}
-
-function updateTimeFromPowerups(time, collisions) {
-  return Math.min(time + core.reduce(
-    0,
-    collisions,
-    function(item) { return item.collision ? 10000 : 0},
-    function(current, x) { return current + x}), 10000)
-}
-
 function updateScoreFromCollisions(score, collisions) {
   return score + core.reduce(
     0,
@@ -323,6 +321,21 @@ function createBullet() {
   return bullet
 }
 
+function explosionsForAll(explosions, enemies) {
+  core.each(enemies, function(enemy) {
+    explosions = addExplosionParticleTo(explosions, enemy) 
+  })
+  return explosions
+}
+
+function destroyAllEnemies(enemies) {
+  core.updatein(enemies, function(enemy) {
+    enemy.alive = false
+    return enemy
+  })
+  return enemies
+}
+
 function createEnemy() {
   var enemy = rect.create(0,0, 10, 10)
   enemy.alive = false
@@ -358,6 +371,22 @@ function spawnPowerup(powerups, x, y) {
     powerups[i].x = x
     powerups[i].y = y
     powerups[i].age = 0
+
+    var index = Math.random() * 100
+
+    if(index < 70) {
+      powerups[i].type = 'time'
+      powerups[i].render.image = 'time.png'
+    }
+    else if(index < 90) {
+      powerups[i].type = 'health'
+      powerups[i].render.image = 'heart.png'
+    }
+    else if(index < 100) {
+      powerups[i].type = 'smartbomb'
+      powerups[i].render.image = 'powerup.png'
+    }
+
     return powerups
   }
   return powerups
@@ -486,7 +515,7 @@ var each = exports.each = function(items, fn) {
   fnArgs.unshift(null)
   for(var i = 0 ; i < items.length; i++) {
     fnArgs[0] = items[i]
-    fn.apply(this, fnArgs)
+    if(fn.apply(this, fnArgs) === false) break
   }
 }
 function extraArguments(items) {
@@ -788,6 +817,7 @@ exports.create = function(x, y, w, h) {
     friction: 0.01,
     pushx: 0,
     pushy: 0,
+    type: '',
     render: {
       colour: '#FFF'
     }

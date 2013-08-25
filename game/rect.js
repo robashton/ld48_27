@@ -38,6 +38,7 @@ exports.create = function(x, y, w, h) {
     friction: 0.01,
     pushx: 0,
     pushy: 0,
+    type: '',
     render: {
       colour: '#FFF'
     }

@@ -17,9 +17,17 @@ exports.bulletspeed = function() {
 }
 
 exports.enemyImpulse = function() {
-  return 0.01 * _level
+  return 0.05 + (_level * 0.01)
 }
 
 exports.playerImpulse = function() {
   return 0.1
+}
+
+exports.enemyFriction = function() {
+  return 0.1 - (_level * 0.01)
+}
+
+exports.enemySpawnCount = function() {
+  return 20 + (10 * _level)
 }

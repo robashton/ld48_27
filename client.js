@@ -34,7 +34,7 @@ domReady(function() {
     playContainer.style.display = 'block'
 
     var player = createPlayer() 
-      , enemies = null
+      , enemies = core.repeat(500, createEnemy)
       , bullets = core.repeat(1000, createBullet)
       , explosions = core.repeat(5000, createExplosion)
       , timeLeft = -1
@@ -48,7 +48,7 @@ domReady(function() {
       if(timeLeft < 0) {
         timeLeft = 10000
         balancing.levelup()
-        enemies = core.repeat(100, spawnEnemy)
+        enemies = spawnEnemies(enemies, balancing.enemySpawnCount())
       }
 
       if(health < 0) {
@@ -85,6 +85,7 @@ domReady(function() {
       explosions = updateExplosionsFromCollisions(explosions, collisions, enemies)
       enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
       explosions = removeOldExplosions(explosions)
+      enemies = pushEnemiesAwayFromCentre(enemies, player)
 
       timeLeft -= frameTime
       clear()
@@ -109,20 +110,34 @@ function secondItemFromCollision(item) {
   return item.collision ? item.two : null
 }
 
-function pushEnemiesAwayFromCentre(enemies) {
-  var centre =  core.reduce(
-    { x: 0, y: 0},
+function pushEnemiesAwayFromCentre(enemies, player) {
+  var summary =  core.reduce(
+    { x: 0, y: 0, maxindex: 0, count: 0},
     enemies,
     function(enemy) { return enemy },
-    function(current, enemy) { current.x += enemy.x; current.y += enemy.y; return current })
+    function(current, enemy) 
+    { 
+      if(!enemy.alive) return current
+      current.x += enemy.x; current.y += enemy.y; 
+      current.count++;
+      current.maxindex = Math.max(current.maxindex, enemy.index); 
+      return current })
+  
+  console.log(summary)
 
-  centre.x /= enemies.length
-  centre.y /= enemies.length
+  summary.x /= summary.count
+  summary.y /= summary.count
 
   return core.updatein(enemies, function(enemy) {
-    var vector = maths.vectorBetween(enemy.x, enemy.y, centre.x, centre.y)
-    enemy.vx += vector.x * - balancing.enemyImpulse() / 2
-    enemy.vy += vector.y * - balancing.enemyImpulse() / 2    
+    if(!enemy.alive) return enemy
+      
+    var vector = maths.vectorBetween(
+        enemy.x, enemy.y, 
+        (player.x + player.vx*60) + enemy.pushx, 
+        (player.y + player.vy*60) + enemy.pushy )
+
+    enemy.vx += vector.x * balancing.enemyImpulse() / 2
+    enemy.vy += vector.y * balancing.enemyImpulse() / 2    
     return enemy
   })
 }
@@ -208,14 +223,33 @@ function createBullet() {
   return bullet
 }
 
-function spawnEnemy() {
-  var degrees = Math.random()  * (Math.PI * 2)
-  var direction = vectorFromDegrees(degrees)
-  var enemy = rect.create(
-    canvas.halfwidth() * direction.x + canvas.halfwidth(), 
-    canvas.halfheight()*direction.y + canvas.halfheight(), 5, 5)
-  enemy.render.colour = '#F00'
+function createEnemy() {
+  var enemy = rect.create(0,0, 10, 10)
+  enemy.alive = false
+  enemy.boundscheck = physics.boundsbounce
+  enemy.friction = 0.1
+  enemy.render.colour = '#FF0'
   return enemy
+}
+
+function spawnEnemies(enemies, count) {
+  for(var i = 0; i < enemies.length; i++) {
+    if(enemies[i].alive) continue
+    var enemy = enemies[i]
+    var degrees = Math.random()  * (Math.PI * 2)
+    var direction = vectorFromDegrees(degrees)
+    enemy.index = count
+    enemy.alive = true
+    enemy.vx = enemy.vy = 0
+    enemy.friction = balancing.enemyFriction()
+    enemy.x = canvas.halfwidth() * direction.x + canvas.halfwidth(), 
+    enemy.y = canvas.halfheight() * direction.y + canvas.halfheight()
+    enemy.pushx = 50 - Math.random() * 100
+    enemy.pushy = 50 - Math.random() * 100
+    enemy.render.colour = '#F00'
+    if(count-- < 0) break;
+  }
+  return enemies
 }
 
 function vectorFromDegrees(degrees) {

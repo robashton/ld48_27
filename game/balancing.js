@@ -28,6 +28,10 @@ exports.enemyFriction = function() {
   return 0.1 - (_level * 0.01)
 }
 
+exports.powerupChance = function() {
+  return 0.2
+}
+
 exports.enemySpawnCount = function() {
   return 20 + (10 * _level)
 }

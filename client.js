@@ -37,7 +37,9 @@ domReady(function() {
       , enemies = core.repeat(500, createEnemy)
       , bullets = core.repeat(1000, createBullet)
       , explosions = core.repeat(5000, createExplosion)
-      , timeLeft = -1
+      , powerups = core.repeat(10, createPowerup)
+      , timeLeft = 10000
+      , spawnTimer = -1
       , frameTime  = 1000 / 30
       , score = 0
       , health = 100
@@ -45,8 +47,8 @@ domReady(function() {
       , intervalTimer = 
 
     setInterval(function() {
-      if(timeLeft < 0) {
-        timeLeft = 10000
+      if(spawnTimer < 0) {
+        spawnTimer = 10000
         balancing.levelup()
         enemies = spawnEnemies(enemies, balancing.enemySpawnCount())
       }
@@ -63,6 +65,7 @@ domReady(function() {
       // the new version of the object it has worked out in some places, and not in others
       // A fun experiment it was nonetheless even if it makes the code a bit wtf
       // I gave up on it after about 5 hours and was left with this pattern and decided to roll with it
+      // cos undoing it would be harder than pressing on
       
       player = physics.apply(player)
       player = input.applyImpulses(player)
@@ -76,9 +79,16 @@ domReady(function() {
       collisions = physics.collideLists(enemies, bullets)
       score = updateScoreFromCollisions(score, collisions)
       explosions = updateExplosionsFromCollisions(explosions, collisions, enemies)
+      powerups = updatePowerupsFromCollisions(powerups, collisions, enemies)
 
       enemies = rect.killUsing(enemies, collisions, firstItemFromCollision)
       bullets = rect.killUsing(bullets, collisions, secondItemFromCollision)
+
+      collisions = physics.collideWithList(player, powerups)
+      health = updateHealthFromPowerups(health, collisions)
+      timeLeft = updateTimeFromPowerups(timeLeft, collisions)
+      powerups = rect.killUsing(powerups, collisions, firstItemFromCollision)
+      explosions = updateExplosionsFromCollisions(explosions, collisions, powerups)
 
       collisions = physics.collideWithList(player, enemies)
       health = updateHealthFromCollisions(health, collisions)
@@ -87,12 +97,14 @@ domReady(function() {
       explosions = removeOldExplosions(explosions)
       enemies = pushEnemiesAwayFromCentre(enemies, player)
 
+      spawnTimer -= frameTime
       timeLeft -= frameTime
       clear()
       rect.draw(player)
-      core.each(enemies, function(enemy) { rect.draw(enemy) })
-      core.each(bullets, function(bullet) { rect.draw(bullet) })
-      core.each(explosions, function(explosion) { rect.draw(explosion) })
+      core.each(enemies, rect.draw)
+      core.each(bullets, rect.draw)
+      core.each(explosions, rect.draw)
+      core.each(powerups, rect.draw)
 
       text.draw('Time left: ' + parseInt(timeLeft / 1000, 10), 500, 20, 18)
       text.draw('Score: ' + score, 10, 20, 18)
@@ -122,8 +134,6 @@ function pushEnemiesAwayFromCentre(enemies, player) {
       current.count++;
       current.maxindex = Math.max(current.maxindex, enemy.index); 
       return current })
-  
-  console.log(summary)
 
   summary.x /= summary.count
   summary.y /= summary.count
@@ -150,6 +160,18 @@ function updateExplosionsFromCollisions(explosions, collisions, rects) {
   return explosions
 }
 
+function updatePowerupsFromCollisions(powerups, collisions, rects) {
+  for(var i = 0 ; i < collisions.length; i++) {
+    if(!collisions[i].collision) break
+    if(Math.random() < balancing.powerupChance())
+      spawnPowerup(powerups, 
+        rects[collisions[i].one].x, 
+        rects[collisions[i].one].y)
+  }
+  return powerups
+}
+
+
 function removeOldExplosions(explosions){
   core.updatein(explosions, function(item) {
     if(item.age > 45)
@@ -169,6 +191,7 @@ function addExplosionParticleTo(explosions, rect) {
     item.age = 0
     item.x = rect.x
     item.y = rect.y
+    item.render.colour = rect.render.colour
     item.vx = 0.5 - Math.random(),
     item.vy = 0.5 - Math.random()
     if(count <= 0) break;
@@ -180,8 +203,24 @@ function updateHealthFromCollisions(health, collisions) {
   return health + core.reduce(
     0,
     collisions,
-    function(item) { return item.collision ? balancing.level() : 0},
+    function(item) { return item.collision ? balancing.level() * 3 : 0},
     function(current, x) { return current - x})
+}
+
+function updateHealthFromPowerups(health, collisions) {
+  return Math.min(health + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? 10 : 0},
+    function(current, x) { return current + x}), 100)
+}
+
+function updateTimeFromPowerups(time, collisions) {
+  return Math.min(time + core.reduce(
+    0,
+    collisions,
+    function(item) { return item.collision ? 10000 : 0},
+    function(current, x) { return current + x}), 10000)
 }
 
 function updateScoreFromCollisions(score, collisions) {
@@ -200,9 +239,18 @@ function clear() {
 }
 
 function createPlayer() {
-  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 3, 3)
+  var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 5, 5)
   player.render.colour = '#0F0'
   return player
+}
+
+function createPowerup() {
+  var powerup = rect.create(0,0,10,10)
+  powerup.alive = false
+  powerup.boundscheck = physics.boundskill
+  powerup.friction = 0
+  powerup.render.colour = '#00FF00'
+  return powerup
 }
 
 function createExplosion() {
@@ -230,6 +278,18 @@ function createEnemy() {
   enemy.friction = 0.1
   enemy.render.colour = '#FF0'
   return enemy
+}
+
+function spawnPowerup(powerups, x, y) {
+  for(var i = 0; i < powerups.length; i++) {
+    if(powerups[i].alive) continue
+    powerups[i].alive = true
+    powerups[i].x = x
+    powerups[i].y = y
+    powerups[i].age = 0
+    return powerups
+  }
+  return powerups
 }
 
 function spawnEnemies(enemies, count) {

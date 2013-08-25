@@ -1,5 +1,7 @@
 body {
   padding: 10px;
+  background-color: #000;
+  color: #fff;
 }
 #intro {
   display: block;
@@ -7,4 +9,31 @@ body {
 #play,
 #over {
   display: none;
+}
+#play #game,
+#over #game {
+  float: left;
+  border: 5px solid #fff;
+}
+#play .instructions,
+#over .instructions {
+  float: left;
+  margin-left: 20px;
+  padding: 20px;
+  border: 5px solid #fff;
+}
+#play .instructions img,
+#over .instructions img {
+  width: 15px;
+  height: 15px;
+}
+#play h5.time,
+#over h5.time {
+  color: #000;
+  background-color: #ff0;
+}
+#play h5.health,
+#over h5.health {
+  color: #000;
+  background-color: #080;
 }

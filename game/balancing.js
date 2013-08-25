@@ -13,7 +13,11 @@ exports.level = function() {
 }
 
 exports.bulletspeed = function() {
-  return 2.5
+  return 5
+}
+
+exports.spawnTimer = function() {
+  return Math.max(3000 - (_level * 50), 1000)
 }
 
 exports.enemyImpulse = function() {

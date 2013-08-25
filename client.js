@@ -15,6 +15,7 @@ domReady(function() {
     , playContainer = document.getElementById('play')
     , overContainer = document.getElementById('over')
     , scoreContainer = document.getElementById('score')
+    , started = false
 
   btnStart.onclick = startGame
   btnRestart.onclick = startGame
@@ -23,9 +24,12 @@ domReady(function() {
     playContainer.style.display = 'none'
     overContainer.style.display = 'block'
     scoreContainer.innerText = score
+    started = false
   }
 
   function startGame() {
+    if(started) return
+    started = true
     input.init()
     balancing.reset()
 
@@ -48,7 +52,7 @@ domReady(function() {
 
     setInterval(function() {
       if(spawnTimer < 0) {
-        spawnTimer = 4000
+        spawnTimer = balancing.spawnTimer()
         balancing.levelup()
         enemies = spawnEnemies(enemies, balancing.enemySpawnCount())
       }
@@ -108,6 +112,8 @@ domReady(function() {
       spawnTimer -= frameTime
       timeLeft -= frameTime
       clear()
+
+      drawPlayerHalo(player)
       rect.draw(player)
       core.each(enemies, rect.draw)
       core.each(bullets, rect.draw)
@@ -119,6 +125,16 @@ domReady(function() {
     }, frameTime)
   }
 })
+
+function drawPlayerHalo(player) {
+  canvas.context().beginPath();
+  canvas.context().globalAlpha = 0.5
+  canvas.context().fillStyle = '#0F0'
+  canvas.context().arc(player.x + player.w/2, player.y + player.h/2, 7.5, 0, Math.PI*2, true); 
+  canvas.context().closePath();
+  canvas.context().fill();
+  canvas.context().globalAlpha = 1.0
+}
 
 function drawTimeLeft(amount) {
   canvas.context().fillStyle = '#FF0'
@@ -193,7 +209,7 @@ function updatePowerupsFromCollisions(powerups, collisions, rects) {
 
 function removeOldExplosions(explosions){
   core.updatein(explosions, function(item) {
-    if(item.age > 120)
+    if(item.age > 200)
       item.alive = false
     return item
   })
@@ -201,7 +217,7 @@ function removeOldExplosions(explosions){
 }
 
 function addExplosionParticleTo(explosions, rect, amount) {
-  amount = amount || 10
+  amount = amount || 20
   for(var i = 0 ; i < explosions.length; i++) {
     var item = explosions[i]
     if(item.alive) continue
@@ -222,7 +238,7 @@ function updateHealthFromCollisions(health, collisions) {
   return health + core.reduce(
     0,
     collisions,
-    function(item) { return item.collision ? balancing.level() * 3 : 0},
+    function(item) { return item.collision ? balancing.level() : 0},
     function(current, x) { return current - x})
 }
 
@@ -270,7 +286,7 @@ function createPowerup() {
   powerup.alive = false
   powerup.boundscheck = physics.boundskill
   powerup.friction = 0
-  powerup.render.colour = '#00FF00'
+  powerup.render.colour = '#FFFF00'
   powerup.render.image = 'powerup.png'
   return powerup
 }
@@ -289,7 +305,7 @@ function createBullet() {
   bullet.alive = false
   bullet.boundscheck = physics.boundskill
   bullet.friction = 0
-  bullet.render.colour = '#FF0'
+  bullet.render.colour = '#88F'
   return bullet
 }
 
@@ -298,8 +314,26 @@ function createEnemy() {
   enemy.alive = false
   enemy.boundscheck = physics.boundsbounce
   enemy.friction = 0.1
-  enemy.render.colour = '#FF0'
-  enemy.render.image = 'redenemy.png'
+
+  switch(Math.floor(Math.random() * 4)) {
+    case 0:
+      enemy.render.colour = '#FF0'
+      enemy.render.image = 'redenemy.png'
+      break;
+    case 1:
+      enemy.render.colour = '#FF0'
+      enemy.render.image = 'orangeenemy.png'
+      break;
+    case 2:
+      enemy.render.colour = '#FF0'
+      enemy.render.image = 'blueenemy.png'
+      break;
+    case 3:
+      enemy.render.colour = '#FF0'
+      enemy.render.image = 'greyenemy.png'
+      break;
+  }
+
   return enemy
 }
 

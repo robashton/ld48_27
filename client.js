@@ -17,6 +17,7 @@ domReady(function() {
     , overContainer = document.getElementById('over')
     , scoreContainer = document.getElementById('score')
     , started = false
+    , beat = new Sound('bass')
 
   btnStart.onclick = startGame
   btnRestart.onclick = startGame
@@ -40,7 +41,6 @@ domReady(function() {
 
     setTimeout(playBeat, 1000)
 
-
     function playBeat() {
       if(!player.alive) return
       if(timeLeft < 6000) {
@@ -54,7 +54,6 @@ domReady(function() {
       , bullets = core.repeat(250, createBullet)
       , explosions = core.repeat(500, createExplosion)
       , powerups = core.repeat(10, createPowerup)
-      , beat = new Sound('bass')
       , timeLeft = 10000
       , spawnTimer = -1
       , frameTime  = 1000 / 30

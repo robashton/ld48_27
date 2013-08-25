@@ -129,7 +129,7 @@ domReady(function() {
 
 function drawPlayerHalo(player) {
   canvas.context().beginPath();
-  canvas.context().globalAlpha = 0.5
+  canvas.context().globalAlpha = 0.25
   canvas.context().fillStyle = '#0F0'
   canvas.context().arc(player.x + player.w/2, player.y + player.h/2, 7.5, 0, Math.PI*2, true); 
   canvas.context().closePath();

@@ -49,15 +49,23 @@ domReady(function() {
 
     setInterval(function() {
       if(spawnTimer < 0) {
-        spawnTimer = 10000
+        spawnTimer = 4000
         balancing.levelup()
         enemies = spawnEnemies(enemies, balancing.enemySpawnCount())
       }
 
-      if(health < 0) {
-        input.shutdown()
-        endGame(score)
-        clearInterval(intervalTimer)
+      if(health < 0 || timeLeft < 0 && player.alive) {
+        blowUp(function() {
+          input.shutdown()
+          endGame(score)
+          clearInterval(intervalTimer)
+        })
+      }
+
+      function blowUp(cb) {
+        player.alive = false
+        explosions = addExplosionParticleTo(explosions, player, 100)
+        setTimeout(cb, 5000)
       }
 
       // If you're looking at this and wondering WTF, then
@@ -106,13 +114,24 @@ domReady(function() {
       core.each(bullets, rect.draw)
       core.each(explosions, rect.draw)
       core.each(powerups, rect.draw)
-
-      text.draw('Time left: ' + parseInt(timeLeft / 1000, 10), 500, 20, 18)
+      drawTimeLeft(timeLeft)
+      drawHealth(health)
       text.draw('Score: ' + score, 10, 20, 18)
-      text.draw('Health: ' + health, 10, 480, 18)
     }, frameTime)
   }
 })
+
+function drawTimeLeft(amount) {
+  canvas.context().fillStyle = '#FF0'
+  var height = (0.046 * amount)
+  canvas.context().fillRect(635, 475 - height, 5, height)
+}
+
+function drawHealth(amount) {
+  canvas.context().fillStyle = '#080'
+  var height = (4.6 * amount)
+  canvas.context().fillRect(628, 475 - height, 5, height)
+}
 
 
 function firstItemFromCollision(item) {
@@ -144,8 +163,8 @@ function pushEnemiesAwayFromCentre(enemies, player) {
       
     var vector = maths.vectorBetween(
         enemy.x, enemy.y, 
-        (player.x + player.vx*60) + enemy.pushx, 
-        (player.y + player.vy*60) + enemy.pushy )
+        summary.x + enemy.pushx, 
+        summary.y + enemy.pushy )
 
     enemy.vx += vector.x * balancing.enemyImpulse() / 2
     enemy.vy += vector.y * balancing.enemyImpulse() / 2    
@@ -175,27 +194,27 @@ function updatePowerupsFromCollisions(powerups, collisions, rects) {
 
 function removeOldExplosions(explosions){
   core.updatein(explosions, function(item) {
-    if(item.age > 45)
+    if(item.age > 120)
       item.alive = false
     return item
   })
   return explosions
 }
 
-function addExplosionParticleTo(explosions, rect) {
-  var count = 10
+function addExplosionParticleTo(explosions, rect, amount) {
+  amount = amount || 10
   for(var i = 0 ; i < explosions.length; i++) {
     var item = explosions[i]
     if(item.alive) continue
-    count--
+    amount--
     item.alive = true
     item.age = 0
     item.x = rect.x
     item.y = rect.y
     item.render.colour = rect.render.colour
-    item.vx = 0.5 - Math.random(),
-    item.vy = 0.5 - Math.random()
-    if(count <= 0) break;
+    item.vx = 0.5 - Math.random() + (rect.vx * 0.1),
+    item.vy = 0.5 - Math.random() + (rect.vy * 0.1)
+    if(amount <= 0) break;
   }
   return explosions
 }
@@ -241,6 +260,7 @@ function clear() {
 
 function createPlayer() {
   var player = rect.create(canvas.halfwidth(), canvas.halfheight(), 5, 5)
+  player.friction = balancing.playerFriction()
   player.render.colour = '#0F0'
   return player
 }
@@ -340,23 +360,27 @@ exports.bulletspeed = function() {
 }
 
 exports.enemyImpulse = function() {
-  return 0.05 + (_level * 0.01)
+  return 0.05 + (_level * 0.001)
 }
 
 exports.playerImpulse = function() {
-  return 0.1
+  return 0.1 + (_level * 0.002)
+}
+
+exports.playerFriction = function() {
+  return 0.05
 }
 
 exports.enemyFriction = function() {
-  return 0.1 - (_level * 0.01)
+  return 0.1 - (_level * 0.001)
 }
 
 exports.powerupChance = function() {
-  return 0.2
+  return Math.max(1.0 - (_level * 0.01), 0.2)
 }
 
 exports.enemySpawnCount = function() {
-  return 20 + (10 * _level)
+  return 2 + _level
 }
 
 },{}],3:[function(require,module,exports){

@@ -7,6 +7,7 @@ var domReady = require('domready')
   , balancing = require('./game/balancing')
   , text = require('./game/text')
   , maths = require('./game/maths')
+  , Sound = require('primo-audio')
 
 domReady(function() {
   var btnStart = document.getElementById('start')
@@ -33,16 +34,27 @@ domReady(function() {
     input.init()
     balancing.reset()
 
-
     introContainer.style.display = 'none'
     overContainer.style.display = 'none'
     playContainer.style.display = 'block'
+
+    setTimeout(playBeat, 1000)
+
+
+    function playBeat() {
+      if(!player.alive) return
+      if(timeLeft < 6000) {
+        beat.play()
+      }
+      setTimeout(playBeat, (timeLeft / 10000) * 1000)
+    }
 
     var player = createPlayer() 
       , enemies = core.repeat(100, createEnemy)
       , bullets = core.repeat(250, createBullet)
       , explosions = core.repeat(500, createExplosion)
       , powerups = core.repeat(10, createPowerup)
+      , beat = new Sound('bass')
       , timeLeft = 10000
       , spawnTimer = -1
       , frameTime  = 1000 / 30

@@ -17,7 +17,7 @@ exports.bulletspeed = function() {
 }
 
 exports.spawnTimer = function() {
-  return Math.max(3000 - (_level * 50), 1000)
+  return Math.max(3000 - (_level * 20), 1000)
 }
 
 exports.enemyImpulse = function() {
@@ -25,11 +25,11 @@ exports.enemyImpulse = function() {
 }
 
 exports.playerImpulse = function() {
-  return 0.1 + (_level * 0.002)
+  return 0.1 + (_level * 0.01)
 }
 
 exports.playerFriction = function() {
-  return 0.05
+  return 0.04
 }
 
 exports.enemyFriction = function() {

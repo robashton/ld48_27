@@ -7,6 +7,7 @@ var domReady = require('domready')
   , balancing = require('./game/balancing')
   , text = require('./game/text')
   , maths = require('./game/maths')
+  , GC = require('game-controller')
 
 domReady(function() {
   var btnStart = document.getElementById('start')
@@ -32,6 +33,7 @@ domReady(function() {
     started = true
     input.init()
     balancing.reset()
+
 
     introContainer.style.display = 'none'
     overContainer.style.display = 'none'

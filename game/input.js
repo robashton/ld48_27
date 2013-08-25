@@ -3,6 +3,7 @@ var rect = require('./rect')
   , throttleit = require('throttleit')
   , maths = require('./maths')
   , balancing = require('./balancing')
+  , GC = require('game-controller')
 
 var _left = false,
     _right = false,
@@ -22,7 +23,33 @@ var _left = false,
    document.onmouseup = onMouseUp
    document.onmousemove = onMouseMove
    _firingMethod = throttleit(addBulletTo, 100)
+   setupJoypad()
  }
+
+function setupJoypad() {
+//    GC.GameController.init( { 
+//      canvas: 'game',
+//      left: {
+//        type: 'joystick', 
+//        position: { left: '15%', bottom: '15%' },
+//        touchMove: function( details ) {
+//          console.log( details.dx );
+//          console.log( details.dy );
+//          console.log( details.max );
+//          console.log( details.normalizedX );
+//          console.log( details.normalizedY );
+//        }
+//      }, 
+//      right: { 
+//        type: 'joystick', 
+//        position: { right: '15%', bottom: '15%' } ,
+//        touchMove: function( details ) {
+//            // Do something...
+//        }
+//      }
+//    });
+
+  }
 
  exports.shutdown = function() {
    document.onkeydown = null
@@ -72,8 +99,8 @@ var _left = false,
  }
 
  function onMouseMove(e) {
-   _firingLocation.x = e.x - canvas.left()
-   _firingLocation.y = e.y - canvas.top()
+   _firingLocation.x = e.screenX - canvas.left()
+   _firingLocation.y = e.screenY - canvas.top()
  }
 
  function onMouseDown() {

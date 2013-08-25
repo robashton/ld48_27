@@ -19,8 +19,7 @@
     "domready": "~0.2.12",
     "hammerjs": "~1.0.5",
     "throttleit": "0.0.2",
-    "primo-audio": "0.0.7",
-    "game-controller": "0.0.1"
+    "primo-audio": "0.0.7"
   },
   "dependencies": {
     "stylus": "~0.37.0",

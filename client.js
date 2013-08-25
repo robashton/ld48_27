@@ -7,7 +7,6 @@ var domReady = require('domready')
   , balancing = require('./game/balancing')
   , text = require('./game/text')
   , maths = require('./game/maths')
-  , GC = require('game-controller')
 
 domReady(function() {
   var btnStart = document.getElementById('start')
@@ -40,9 +39,9 @@ domReady(function() {
     playContainer.style.display = 'block'
 
     var player = createPlayer() 
-      , enemies = core.repeat(500, createEnemy)
-      , bullets = core.repeat(1000, createBullet)
-      , explosions = core.repeat(5000, createExplosion)
+      , enemies = core.repeat(100, createEnemy)
+      , bullets = core.repeat(250, createBullet)
+      , explosions = core.repeat(500, createExplosion)
       , powerups = core.repeat(10, createPowerup)
       , timeLeft = 10000
       , spawnTimer = -1
